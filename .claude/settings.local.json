@@ -1,0 +1,13 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm run dev:*)",
+      "Bash(npm run build:*)",
+      "Bash(taskkill:*)",
+      "Bash(npx kill-port:*)",
+      "Bash(curl:*)",
+      "Bash(if exist \".next\\\\dev\\\\lock\" del /F \".next\\\\dev\\\\lock\")",
+      "Bash(git add:*)"
+    ]
+  }
+}
