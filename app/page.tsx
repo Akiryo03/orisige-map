@@ -95,15 +95,15 @@ export default function Home() {
 
   // カテゴリの表示名マッピング
   const categoryDisplayNames: Record<string, string> = {
-    'くらし': 'kurashi（くらし）',
-    'こころ': 'kokoro（こころ）',
-    'てまひま': 'tema-hima（てまひま）',
-    'たべる': 'taberu（たべる）',
+    'kurashi': 'kurashi（くらし）',
+    'kokoro': 'kokoro（こころ）',
+    'tema-hima': 'tema-hima（てまひま）',
+    'taberu': 'taberu（たべる）',
     'All ibaraki project': 'All ibaraki project',
   };
 
   // カテゴリの表示順
-  const categoryOrder = ['くらし', 'こころ', 'てまひま', 'たべる', 'All ibaraki project'];
+  const categoryOrder = ['kurashi', 'kokoro', 'tema-hima', 'taberu', 'All ibaraki project'];
 
   // 利用可能なカテゴリ一覧（指定順）
   const availableCategories = useMemo(() => {
