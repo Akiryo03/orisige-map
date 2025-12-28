@@ -1,13 +1,13 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import Map from './components/Map';
 import FilterPanel from './components/FilterPanel';
 import LocationList from './components/LocationList';
-import { locations } from './data/locations';
-import { products } from './data/products';
-import { FilterState, Location } from './types';
+import { FilterState, Location, Product } from './types';
 import { filterLocations } from './lib/filters';
+import { db } from './lib/firebase';
+import { collection, getDocs } from 'firebase/firestore';
 
 export default function Home() {
   const apiKey = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY || '';
@@ -22,17 +22,75 @@ export default function Home() {
     null
   );
 
+  const [locations, setLocations] = useState<Location[]>([]);
+  const [products, setProducts] = useState<Product[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Firestoreからデータを取得
+  useEffect(() => {
+    async function fetchData() {
+      if (!db) {
+        setLoading(false);
+        return;
+      }
+
+      try {
+        const [locationsSnap, productsSnap, inventorySnap] = await Promise.all([
+          getDocs(collection(db, 'locations')),
+          getDocs(collection(db, 'products')),
+          getDocs(collection(db, 'inventory')),
+        ]);
+
+        const locationsData = locationsSnap.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as Location[];
+
+        const productsData = productsSnap.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        })) as Product[];
+
+        const inventoryData = inventorySnap.docs.map((doc) => ({
+          id: doc.id,
+          ...doc.data(),
+        }));
+
+        // 在庫情報を商品データに統合
+        const productsWithInventory = productsData.map((product) => {
+          const inventory = inventoryData.filter((inv: any) => inv.productId === product.id);
+          return {
+            ...product,
+            inventory: inventory.map((inv: any) => ({
+              locationId: inv.locationId,
+              stock: inv.stock,
+            })),
+          };
+        });
+
+        setLocations(locationsData);
+        setProducts(productsWithInventory);
+      } catch (error) {
+        console.error('Error fetching data:', error);
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    fetchData();
+  }, []);
+
   // フィルタリングされた場所
   const filteredLocations = useMemo(
     () => filterLocations(locations, filters),
-    [filters]
+    [locations, filters]
   );
 
   // 利用可能なカテゴリ一覧
   const availableCategories = useMemo(() => {
     const categories = new Set(products.map((p) => p.category));
     return Array.from(categories);
-  }, []);
+  }, [products]);
 
   // 場所がクリックされたときの処理
   const handleLocationClick = (location: Location) => {
@@ -40,6 +98,18 @@ export default function Home() {
     // 地図の中心を移動（Map コンポーネントに実装が必要）
     // TODO: Implement map pan functionality
   };
+
+  // ローディング中の表示
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-[#8b2635] mx-auto"></div>
+          <p className="mt-4 text-gray-600 font-medium">データを読み込んでいます...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-white">

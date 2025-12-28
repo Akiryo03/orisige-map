@@ -7,7 +7,12 @@
       "Bash(npx kill-port:*)",
       "Bash(curl:*)",
       "Bash(if exist \".next\\\\dev\\\\lock\" del /F \".next\\\\dev\\\\lock\")",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\norisige販売店マップアプリケーション完成版\n\n- 白背景の和モダンデザイン実装\n- Google Maps統合（現在地ボタン、マーカー、InfoWindow）\n- サイドバーに全フィルター統合（商品カテゴリ、販売店種別、在庫状況）\n- 販売店舗一覧テーブル実装\n- 商品詳細モーダル機能\n- Instagram連携、フッター、SEO最適化\n- Noto Serif JP フォント適用\n- えんじ色\\(#8b2635\\)アクセントカラー統一\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git remote add:*)",
+      "Bash(git push:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run seed:*)"
     ]
   }
 }
