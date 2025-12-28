@@ -21,6 +21,7 @@ function MapContent({ locations, selectedLocation }: Omit<MapProps, 'apiKey'>) {
   const [center, setCenter] = useState(defaultCenter);
   const [zoom, setZoom] = useState(12);
   const [isLocating, setIsLocating] = useState(false);
+  const [openInfoWindowId, setOpenInfoWindowId] = useState<string | null>(null);
 
   // すべてのマーカーが見えるように地図をフィット
   useEffect(() => {
@@ -94,7 +95,12 @@ function MapContent({ locations, selectedLocation }: Omit<MapProps, 'apiKey'>) {
         className="w-full h-full"
       >
         {locations.map((location) => (
-          <LocationMarker key={location.id} location={location} />
+          <LocationMarker
+            key={location.id}
+            location={location}
+            isOpen={openInfoWindowId === location.id}
+            onToggle={(isOpen) => setOpenInfoWindowId(isOpen ? location.id : null)}
+          />
         ))}
       </GoogleMap>
 

@@ -26,6 +26,13 @@ export default function Home() {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
 
+  // スマホ用フィルターモーダル
+  const [showFilterModal, setShowFilterModal] = useState(false);
+
+  // 段階的表示用ステート
+  const [expandedPrefecture, setExpandedPrefecture] = useState<string | null>(null);
+  const [expandedLocation, setExpandedLocation] = useState<string | null>(null);
+
   // Firestoreからデータを取得
   useEffect(() => {
     async function fetchData() {
@@ -86,10 +93,22 @@ export default function Home() {
     [locations, filters]
   );
 
-  // 利用可能なカテゴリ一覧
+  // カテゴリの表示名マッピング
+  const categoryDisplayNames: Record<string, string> = {
+    'くらし': 'kurashi（くらし）',
+    'こころ': 'kokoro（こころ）',
+    'てまひま': 'tema-hima（てまひま）',
+    'たべる': 'taberu（たべる）',
+    'All ibaraki project': 'All ibaraki project',
+  };
+
+  // カテゴリの表示順
+  const categoryOrder = ['くらし', 'こころ', 'てまひま', 'たべる', 'All ibaraki project'];
+
+  // 利用可能なカテゴリ一覧（指定順）
   const availableCategories = useMemo(() => {
     const categories = new Set(products.map((p) => p.category));
-    return Array.from(categories);
+    return categoryOrder.filter((cat) => categories.has(cat));
   }, [products]);
 
   // 場所がクリックされたときの処理
@@ -183,11 +202,7 @@ export default function Home() {
                         : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
                     }`}
                   >
-                    {category === 'kurashi' && 'くらし'}
-                    {category === 'kokoro' && 'こころ'}
-                    {category === 'tema-hima' && 'てまひま'}
-                    {category === 'taberu' && 'たべる'}
-                    {category === 'All ibaraki project' && 'All ibaraki project'}
+                    {categoryDisplayNames[category] || category}
                   </button>
                 ))}
               </div>

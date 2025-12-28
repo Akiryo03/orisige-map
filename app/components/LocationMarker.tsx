@@ -13,10 +13,11 @@ import ProductDetailModal from './ProductDetailModal';
 
 interface LocationMarkerProps {
   location: Location;
+  isOpen: boolean;
+  onToggle: (isOpen: boolean) => void;
 }
 
-export default function LocationMarker({ location }: LocationMarkerProps) {
-  const [infoWindowOpen, setInfoWindowOpen] = useState(false);
+export default function LocationMarker({ location, isOpen, onToggle }: LocationMarkerProps) {
   const [selectedProduct, setSelectedProduct] =
     useState<ProductWithInventory | null>(null);
   const productsWithInventory = getProductsByLocation(location.id);
@@ -45,7 +46,7 @@ export default function LocationMarker({ location }: LocationMarkerProps) {
     <>
       <AdvancedMarker
         position={position}
-        onClick={() => setInfoWindowOpen(true)}
+        onClick={() => onToggle(true)}
         title={location.name}
       >
         <Pin
@@ -56,10 +57,10 @@ export default function LocationMarker({ location }: LocationMarkerProps) {
         />
       </AdvancedMarker>
 
-      {infoWindowOpen && (
+      {isOpen && (
         <InfoWindow
           position={position}
-          onCloseClick={() => setInfoWindowOpen(false)}
+          onCloseClick={() => onToggle(false)}
           maxWidth={380}
         >
           <div className="p-3 font-sans max-h-[500px] overflow-y-auto">
