@@ -347,7 +347,7 @@ export default function Home() {
                       <div className="text-sm text-gray-700">{location.hours}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-700">{location.closed_days}</div>
+                      <div className="text-sm text-gray-700">{location.closedDays}</div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-center">
                       <button

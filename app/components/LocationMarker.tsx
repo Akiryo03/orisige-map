@@ -84,7 +84,7 @@ export default function LocationMarker({ location }: LocationMarkerProps) {
                 </p>
                 <p className="flex items-center gap-1.5">
                   <span className="text-gray-500">📅</span>
-                  <span>定休日: {location.closed_days}</span>
+                  <span>定休日: {location.closedDays}</span>
                 </p>
               </div>
             </div>

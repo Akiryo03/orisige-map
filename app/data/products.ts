@@ -10,7 +10,7 @@ export const products: Product[] = [
     name: 'kasane（仕切なし）',
     price: 2750,
     category: 'kurashi',
-    image_url: '',
+    imageUrl: '',
     description: '積み重ねて使える杉のトレイ。デスクの上をスッキリ整理',
   },
   {
@@ -18,7 +18,7 @@ export const products: Product[] = [
     name: 'kasane（仕切あり）',
     price: 3300,
     category: 'kurashi',
-    image_url: '',
+    imageUrl: '',
     description: '積み重ねて使える杉のトレイ。デスクの上をスッキリ整理',
   },
   {
@@ -26,7 +26,7 @@ export const products: Product[] = [
     name: 'kobaco',
     price: 3300,
     category: 'kurashi',
-    image_url: '',
+    imageUrl: '',
     description: '小さな日用品の定位置に。職人技が光る精密なスライド蓋',
   },
   {
@@ -34,7 +34,7 @@ export const products: Product[] = [
     name: 'tateru',
     price: 6600,
     category: 'kurashi',
-    image_url: '',
+    imageUrl: '',
     description: '杉のスマホスタンド。毎日使うから、本格派の一品を。',
   },
   {
@@ -42,7 +42,7 @@ export const products: Product[] = [
     name: 'yorozu',
     price: 11000,
     category: 'kurashi',
-    image_url: '',
+    imageUrl: '',
     description: '杉のラック。雑誌からバッグまで、なんでも入ります',
   },
 
@@ -52,7 +52,7 @@ export const products: Product[] = [
     name: 'inori（午年バージョン）',
     price: 2200,
     category: 'kokoro',
-    image_url: '',
+    imageUrl: '',
     description: '暮らしの中に祈りの場所を。午年の蹄鉄で幸運を',
   },
   {
@@ -60,7 +60,7 @@ export const products: Product[] = [
     name: 'pochi（中・まじめ）',
     price: 6600,
     category: 'kokoro',
-    image_url: '',
+    imageUrl: '',
     description: '伝統とポップの出会いで生まれた、杉のわんこ。家をパッと明るくする一品です',
   },
   {
@@ -68,7 +68,7 @@ export const products: Product[] = [
     name: 'pochi（中・しっかりもの）',
     price: 6600,
     category: 'kokoro',
-    image_url: '',
+    imageUrl: '',
     description: '伝統とポップの出会いで生まれた、杉のわんこ。家をパッと明るくする一品です',
   },
   {
@@ -76,7 +76,7 @@ export const products: Product[] = [
     name: 'pochi（中・おっとり）',
     price: 6600,
     category: 'kokoro',
-    image_url: '',
+    imageUrl: '',
     description: '伝統とポップの出会いで生まれた、杉のわんこ。家をパッと明るくする一品です',
   },
   {
@@ -84,7 +84,7 @@ export const products: Product[] = [
     name: 'pochi（小・まじめ）',
     price: 4400,
     category: 'kokoro',
-    image_url: '',
+    imageUrl: '',
     description: '伝統とポップの出会いで生まれた、杉のわんこ。家をパッと明るくする一品です',
   },
   {
@@ -92,7 +92,7 @@ export const products: Product[] = [
     name: 'pochi（小・しっかりもの）',
     price: 4400,
     category: 'kokoro',
-    image_url: '',
+    imageUrl: '',
     description: '伝統とポップの出会いで生まれた、杉のわんこ。家をパッと明るくする一品です',
   },
   {
@@ -100,7 +100,7 @@ export const products: Product[] = [
     name: 'pochi（小・おっとり）',
     price: 4400,
     category: 'kokoro',
-    image_url: '',
+    imageUrl: '',
     description: '伝統とポップの出会いで生まれた、杉のわんこ。家をパッと明るくする一品です',
   },
 
@@ -110,7 +110,7 @@ export const products: Product[] = [
     name: 'SugiTags',
     price: 1100,
     category: 'kokoro',
-    image_url: '',
+    imageUrl: '',
     description: '小さな杉のタグ。その地を訪れた記念品に。',
   },
 
@@ -120,7 +120,7 @@ export const products: Product[] = [
     name: 'はしっこ',
     price: 330,
     category: 'tema-hima',
-    image_url: '',
+    imageUrl: '',
     description: '折箱になれなかった杉を、集めました。',
   },
   {
@@ -128,7 +128,7 @@ export const products: Product[] = [
     name: 'もくもく',
     price: 330,
     category: 'tema-hima',
-    image_url: '',
+    imageUrl: '',
     description: '杉を削ってできた、くるくる素材。緩衝材や着火剤に',
   },
   {
@@ -136,7 +136,7 @@ export const products: Product[] = [
     name: 'くんくん',
     price: 330,
     category: 'tema-hima',
-    image_url: '',
+    imageUrl: '',
     description: '杉の持つ消臭作用を活かしたシューキーパー',
   },
 
@@ -146,7 +146,7 @@ export const products: Product[] = [
     name: 'shizuku',
     price: 3850,
     category: 'All ibaraki project',
-    image_url: '',
+    imageUrl: '',
     description: '杉のお線香を、杉の箱に。駒村清明堂さまとのコラボレーションです。',
   },
 
@@ -156,7 +156,7 @@ export const products: Product[] = [
     name: '田舎弁当',
     price: 1500,
     category: 'taberu',
-    image_url: '',
+    imageUrl: '',
     description: '折重の折箱に入った、ふるさとおにぎり店さまの心づくし',
   },
 ];

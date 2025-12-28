@@ -8,7 +8,7 @@ export interface Location {
   latitude: number;
   longitude: number;
   hours: string;
-  closed_days: string;
+  closedDays: string;
   phone?: string;
   website?: string;
   type: 'roadside_station' | 'shop' | 'gallery' | 'shrine' | 'other';
@@ -23,7 +23,7 @@ export interface Product {
   name: string;
   price: number;
   category: string;
-  image_url?: string;
+  imageUrl?: string;
   description?: string;
 }
 
@@ -31,10 +31,13 @@ export interface Product {
  * 在庫の型定義
  */
 export interface Inventory {
-  location_id: string;
-  product_id: string;
+  location_id?: string; // 後方互換性のため残す
+  product_id?: string; // 後方互換性のため残す
+  locationId?: string;
+  productId?: string;
   stock: number;
-  last_updated: string;
+  last_updated?: string;
+  lastUpdated?: Date;
 }
 
 /**
