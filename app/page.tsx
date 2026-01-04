@@ -111,6 +111,20 @@ export default function Home() {
     return categoryOrder.filter((cat) => categories.has(cat));
   }, [products]);
 
+  // 都道府県ごとにグループ化
+  const locationsByPrefecture = useMemo(() => {
+    const grouped: Record<string, Location[]> = {};
+    filteredLocations.forEach((location) => {
+      // 住所から都道府県を抽出
+      const prefecture = location.address.match(/^(東京都|北海道|(?:京都|大阪)府|.{2,3}県)/)?.[0] || 'その他';
+      if (!grouped[prefecture]) {
+        grouped[prefecture] = [];
+      }
+      grouped[prefecture].push(location);
+    });
+    return grouped;
+  }, [filteredLocations]);
+
   // 場所がクリックされたときの処理
   const handleLocationClick = (location: Location) => {
     setSelectedLocation(location);
@@ -173,9 +187,22 @@ export default function Home() {
 
       {/* Main Content */}
       <main className="max-w-[1920px] mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        {/* スマホ用フィルターボタン */}
+        <div className="lg:hidden mb-4">
+          <button
+            onClick={() => setShowFilterModal(true)}
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-[#8b2635] text-white font-medium rounded-lg shadow-md hover:bg-[#6d1d28] transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+            </svg>
+            フィルター
+          </button>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Left Sidebar - Filters */}
-          <aside className="lg:col-span-3 space-y-6">
+          {/* Left Sidebar - Filters (PC用) */}
+          <aside className="hidden lg:block lg:col-span-3 space-y-6">
             {/* 商品カテゴリフィルター */}
             <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 sticky top-24">
               <h3 className="text-base font-bold text-black mb-4 pb-3 border-b-2 border-[#c69c6d]">
@@ -302,87 +329,312 @@ export default function Home() {
               </div>
             </div>
 
-            {/* Location Table */}
-            <div className="bg-white rounded-xl shadow-md overflow-hidden border border-gray-200">
-          <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
-            <h2 className="text-lg font-bold text-black">
-              取扱店舗一覧
-              <span className="ml-3 text-sm font-normal text-gray-600">
-                （{filteredLocations.length}件）
-              </span>
-            </h2>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-gray-50 border-b border-gray-200">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-bold text-black uppercase tracking-wider">
-                    店舗名
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-bold text-black uppercase tracking-wider">
-                    種別
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-bold text-black uppercase tracking-wider">
-                    住所
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-bold text-black uppercase tracking-wider">
-                    営業時間
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-bold text-black uppercase tracking-wider">
-                    定休日
-                  </th>
-                  <th className="px-6 py-3 text-center text-xs font-bold text-black uppercase tracking-wider">
-                    操作
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {filteredLocations.map((location) => (
-                  <tr
-                    key={location.id}
-                    className="hover:bg-gray-50 transition-colors cursor-pointer"
-                    onClick={() => handleLocationClick(location)}
-                  >
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-black">{location.name}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span className="px-3 py-1 inline-flex text-xs leading-5 font-medium rounded-full bg-[#8b2635] text-white">
-                        {location.type === 'roadside_station' && '道の駅'}
-                        {location.type === 'shrine' && '神社'}
-                        {location.type === 'shop' && 'ショップ'}
-                        {location.type === 'gallery' && 'ギャラリー'}
-                        {location.type === 'other' && 'その他'}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="text-sm text-gray-700">{location.address}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-700">{location.hours}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-700">{location.closedDays}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-center">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleLocationClick(location);
-                        }}
-                        className="inline-flex items-center px-3 py-1.5 border border-[#8b2635] text-xs font-medium rounded-md text-[#8b2635] bg-white hover:bg-[#8b2635] hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-[#8b2635] focus:ring-offset-2"
+            {/* Location Table - PC用 */}
+            <div className="hidden md:block bg-white rounded-xl shadow-md overflow-hidden border border-gray-200">
+              <div className="px-6 py-4 border-b border-gray-200 bg-gray-50">
+                <h2 className="text-lg font-bold text-black">
+                  取扱店舗一覧
+                  <span className="ml-3 text-sm font-normal text-gray-600">
+                    （{filteredLocations.length}件）
+                  </span>
+                </h2>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50 border-b border-gray-200">
+                    <tr>
+                      <th className="px-6 py-3 text-left text-xs font-bold text-black uppercase tracking-wider">
+                        店舗名
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-bold text-black uppercase tracking-wider">
+                        種別
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-bold text-black uppercase tracking-wider">
+                        住所
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-bold text-black uppercase tracking-wider">
+                        営業時間
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-bold text-black uppercase tracking-wider">
+                        定休日
+                      </th>
+                      <th className="px-6 py-3 text-center text-xs font-bold text-black uppercase tracking-wider">
+                        操作
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {filteredLocations.map((location) => (
+                      <tr
+                        key={location.id}
+                        className="hover:bg-gray-50 transition-colors cursor-pointer"
+                        onClick={() => handleLocationClick(location)}
                       >
-                        地図で表示
-                      </button>
-                    </td>
-                  </tr>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-black">{location.name}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <span className="px-3 py-1 inline-flex text-xs leading-5 font-medium rounded-full bg-[#8b2635] text-white">
+                            {location.type === 'roadside_station' && '道の駅'}
+                            {location.type === 'shrine' && '神社'}
+                            {location.type === 'shop' && 'ショップ'}
+                            {location.type === 'gallery' && 'ギャラリー'}
+                            {location.type === 'other' && 'その他'}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <div className="text-sm text-gray-700">{location.address}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-700">{location.hours}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm text-gray-700">{location.closedDays}</div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-center">
+                          <button
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleLocationClick(location);
+                            }}
+                            className="inline-flex items-center px-3 py-1.5 border border-[#8b2635] text-xs font-medium rounded-md text-[#8b2635] bg-white hover:bg-[#8b2635] hover:text-white transition-colors focus:outline-none focus:ring-2 focus:ring-[#8b2635] focus:ring-offset-2"
+                          >
+                            地図で表示
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+
+            {/* Location List - スマホ用段階的表示 */}
+            <div className="md:hidden bg-white rounded-xl shadow-md overflow-hidden border border-gray-200">
+              <div className="px-4 py-3 border-b border-gray-200 bg-gray-50">
+                <h2 className="text-base font-bold text-black">
+                  取扱店舗一覧
+                  <span className="ml-2 text-sm font-normal text-gray-600">
+                    （{filteredLocations.length}件）
+                  </span>
+                </h2>
+              </div>
+              <div className="divide-y divide-gray-200">
+                {Object.entries(locationsByPrefecture).map(([prefecture, locations]) => (
+                  <div key={prefecture}>
+                    {/* 都道府県ヘッダー */}
+                    <button
+                      onClick={() => setExpandedPrefecture(expandedPrefecture === prefecture ? null : prefecture)}
+                      className="w-full px-4 py-3 flex items-center justify-between bg-gray-50 hover:bg-gray-100 transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold text-black">{prefecture}</span>
+                        <span className="text-xs text-gray-600">（{locations.length}件）</span>
+                      </div>
+                      <svg
+                        className={`w-5 h-5 text-gray-600 transition-transform ${expandedPrefecture === prefecture ? 'rotate-180' : ''}`}
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                      >
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                      </svg>
+                    </button>
+
+                    {/* 店舗リスト */}
+                    {expandedPrefecture === prefecture && (
+                      <div className="bg-white">
+                        {locations.map((location) => (
+                          <div key={location.id} className="border-t border-gray-100">
+                            {/* 店舗名・種別 */}
+                            <button
+                              onClick={() => setExpandedLocation(expandedLocation === location.id ? null : location.id)}
+                              className="w-full px-4 py-3 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                            >
+                              <div className="flex items-center gap-3">
+                                <span className="text-sm font-medium text-black">{location.name}</span>
+                                <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-[#8b2635] text-white">
+                                  {location.type === 'roadside_station' && '道の駅'}
+                                  {location.type === 'shrine' && '神社'}
+                                  {location.type === 'shop' && 'ショップ'}
+                                  {location.type === 'gallery' && 'ギャラリー'}
+                                  {location.type === 'other' && 'その他'}
+                                </span>
+                              </div>
+                              <svg
+                                className={`w-4 h-4 text-gray-600 transition-transform flex-shrink-0 ${expandedLocation === location.id ? 'rotate-180' : ''}`}
+                                fill="none"
+                                stroke="currentColor"
+                                viewBox="0 0 24 24"
+                              >
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                              </svg>
+                            </button>
+
+                            {/* 詳細情報 */}
+                            {expandedLocation === location.id && (
+                              <div className="px-4 pb-4 space-y-3 bg-gray-50">
+                                <div>
+                                  <div className="text-xs font-medium text-gray-500 mb-1">住所</div>
+                                  <div className="text-sm text-gray-700">{location.address}</div>
+                                </div>
+                                <div>
+                                  <div className="text-xs font-medium text-gray-500 mb-1">営業時間</div>
+                                  <div className="text-sm text-gray-700">{location.hours}</div>
+                                </div>
+                                <div>
+                                  <div className="text-xs font-medium text-gray-500 mb-1">定休日</div>
+                                  <div className="text-sm text-gray-700">{location.closedDays}</div>
+                                </div>
+                                <button
+                                  onClick={() => handleLocationClick(location)}
+                                  className="w-full mt-2 px-4 py-2 bg-[#8b2635] text-white text-sm font-medium rounded-lg hover:bg-[#6d1d28] transition-colors"
+                                >
+                                  地図で表示
+                                </button>
+                              </div>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
                 ))}
-              </tbody>
-            </table>
-          </div>
+              </div>
             </div>
           </div>
         </div>
+
+        {/* スマホ用フィルターモーダル */}
+        {showFilterModal && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-50 lg:hidden">
+            <div className="fixed inset-x-0 bottom-0 bg-white rounded-t-2xl shadow-2xl max-h-[85vh] overflow-y-auto">
+              {/* モーダルヘッダー */}
+              <div className="sticky top-0 bg-white border-b border-gray-200 px-4 py-4 flex items-center justify-between">
+                <h2 className="text-lg font-bold text-black">フィルター</h2>
+                <button
+                  onClick={() => setShowFilterModal(false)}
+                  className="p-2 hover:bg-gray-100 rounded-full transition-colors"
+                  aria-label="閉じる"
+                >
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* モーダルコンテンツ */}
+              <div className="p-4 space-y-6">
+                {/* 商品カテゴリフィルター */}
+                <div>
+                  <h3 className="text-base font-bold text-black mb-3 pb-2 border-b-2 border-[#c69c6d]">
+                    商品カテゴリで絞り込み
+                  </h3>
+                  <div className="space-y-2">
+                    <button
+                      onClick={() => setFilters({ ...filters, category: null })}
+                      className={`w-full text-left px-4 py-2.5 rounded-lg transition-colors text-sm font-medium ${
+                        filters.category === null
+                          ? 'bg-[#8b2635] text-white'
+                          : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+                      }`}
+                    >
+                      すべて
+                    </button>
+                    {availableCategories.map((category) => (
+                      <button
+                        key={category}
+                        onClick={() => setFilters({ ...filters, category })}
+                        className={`w-full text-left px-4 py-2.5 rounded-lg transition-colors text-sm font-medium ${
+                          filters.category === category
+                            ? 'bg-[#8b2635] text-white'
+                            : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+                        }`}
+                      >
+                        {categoryDisplayNames[category] || category}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                {/* 販売店フィルター */}
+                <div>
+                  <h3 className="text-base font-bold text-black mb-3 pb-2 border-b-2 border-[#c69c6d]">
+                    販売店で絞り込み
+                  </h3>
+
+                  {/* 種別フィルター */}
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      種別
+                    </label>
+                    <div className="space-y-2">
+                      <button
+                        onClick={() => setFilters({ ...filters, locationType: null })}
+                        className={`w-full text-left px-4 py-2.5 rounded-lg transition-colors text-sm font-medium ${
+                          filters.locationType === null
+                            ? 'bg-[#8b2635] text-white'
+                            : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+                        }`}
+                      >
+                        すべて
+                      </button>
+                      <button
+                        onClick={() => setFilters({ ...filters, locationType: 'roadside_station' })}
+                        className={`w-full text-left px-4 py-2.5 rounded-lg transition-colors text-sm font-medium ${
+                          filters.locationType === 'roadside_station'
+                            ? 'bg-[#8b2635] text-white'
+                            : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+                        }`}
+                      >
+                        道の駅
+                      </button>
+                      <button
+                        onClick={() => setFilters({ ...filters, locationType: 'shrine' })}
+                        className={`w-full text-left px-4 py-2.5 rounded-lg transition-colors text-sm font-medium ${
+                          filters.locationType === 'shrine'
+                            ? 'bg-[#8b2635] text-white'
+                            : 'bg-gray-50 text-gray-700 hover:bg-gray-100'
+                        }`}
+                      >
+                        神社
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* 在庫フィルター */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                      在庫状況
+                    </label>
+                    <div className="flex items-center px-4 py-2.5 bg-gray-50 rounded-lg">
+                      <input
+                        type="checkbox"
+                        id="inStockModal"
+                        checked={filters.inStockOnly}
+                        onChange={(e) =>
+                          setFilters({ ...filters, inStockOnly: e.target.checked })
+                        }
+                        className="w-4 h-4 text-[#8b2635] bg-gray-100 border-gray-300 rounded focus:ring-[#8b2635] focus:ring-2"
+                      />
+                      <label htmlFor="inStockModal" className="ml-3 text-sm text-gray-700 font-medium">
+                        在庫ありのみ表示
+                      </label>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 適用ボタン */}
+                <button
+                  onClick={() => setShowFilterModal(false)}
+                  className="w-full px-4 py-3 bg-[#8b2635] text-white font-medium rounded-lg shadow-md hover:bg-[#6d1d28] transition-colors"
+                >
+                  適用する
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
 
       {/* Footer */}
