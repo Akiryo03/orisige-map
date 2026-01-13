@@ -31,6 +31,7 @@ export interface Product {
  * 在庫の型定義
  */
 export interface Inventory {
+  id?: string;
   location_id?: string; // 後方互換性のため残す
   product_id?: string; // 後方互換性のため残す
   locationId?: string;
@@ -38,6 +39,18 @@ export interface Inventory {
   stock: number;
   last_updated?: string;
   lastUpdated?: Date;
+}
+
+/**
+ * 売上の型定義
+ */
+export interface Sale {
+  id?: string;
+  date: string; // YYYY-MM-DD形式
+  productId: string;
+  locationId: string;
+  quantity: number;
+  createdAt?: Date;
 }
 
 /**

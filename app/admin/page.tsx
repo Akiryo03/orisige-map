@@ -111,6 +111,21 @@ export default function AdminDashboard() {
         </h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <Link
+            href="/admin/sales"
+            className="flex items-center gap-3 p-4 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors group"
+          >
+            <span className="text-2xl">💰</span>
+            <div>
+              <p className="font-medium text-gray-800 group-hover:text-[#8b2635]">
+                売上を登録
+              </p>
+              <p className="text-sm text-gray-600">
+                日次売上データを入力
+              </p>
+            </div>
+          </Link>
+
+          <Link
             href="/admin/inventory"
             className="flex items-center gap-3 p-4 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors group"
           >
