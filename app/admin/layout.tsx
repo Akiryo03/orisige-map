@@ -15,6 +15,7 @@ function AdminLayoutContent({ children }: { children: React.ReactNode }) {
 
   const navItems = [
     { href: '/admin', label: 'ダッシュボード', icon: '📊' },
+    { href: '/admin/sales', label: '売上管理', icon: '💰' },
     { href: '/admin/inventory', label: '在庫管理', icon: '📦' },
     { href: '/admin/locations', label: '販売場所管理', icon: '🏪' },
     { href: '/admin/products', label: '商品管理', icon: '🎁' },

@@ -126,6 +126,21 @@ export default function AdminDashboard() {
           </Link>
 
           <Link
+            href="/admin/sales/analytics"
+            className="flex items-center gap-3 p-4 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors group"
+          >
+            <span className="text-2xl">📈</span>
+            <div>
+              <p className="font-medium text-gray-800 group-hover:text-[#8b2635]">
+                売上分析を見る
+              </p>
+              <p className="text-sm text-gray-600">
+                売上推移をグラフで確認
+              </p>
+            </div>
+          </Link>
+
+          <Link
             href="/admin/inventory"
             className="flex items-center gap-3 p-4 bg-gray-50 hover:bg-gray-100 rounded-lg transition-colors group"
           >
