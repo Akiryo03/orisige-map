@@ -18,6 +18,7 @@ export default function SalesPage() {
     productId: '',
     locationId: '',
     quantity: 1,
+    updateInventory: true, // 在庫を減らすかどうか（デフォルト: true）
   });
 
   // マスターデータ
@@ -112,37 +113,41 @@ export default function SalesPage() {
 
       await addDoc(collection(db, 'sales'), saleData);
 
-      // 在庫を減らす処理
-      try {
-        const inventoryQuery = query(
-          collection(db, 'inventory'),
-          where('productId', '==', formData.productId),
-          where('locationId', '==', formData.locationId)
-        );
+      // 在庫を減らす処理（updateInventoryがtrueの場合のみ）
+      if (formData.updateInventory) {
+        try {
+          const inventoryQuery = query(
+            collection(db, 'inventory'),
+            where('productId', '==', formData.productId),
+            where('locationId', '==', formData.locationId)
+          );
 
-        const inventorySnap = await getDocs(inventoryQuery);
+          const inventorySnap = await getDocs(inventoryQuery);
 
-        if (!inventorySnap.empty) {
-          const inventoryDoc = inventorySnap.docs[0];
-          const currentStock = inventoryDoc.data().stock || 0;
-          const newStock = Math.max(0, currentStock - formData.quantity);
+          if (!inventorySnap.empty) {
+            const inventoryDoc = inventorySnap.docs[0];
+            const currentStock = inventoryDoc.data().stock || 0;
+            const newStock = Math.max(0, currentStock - formData.quantity);
 
-          await updateDoc(doc(db, 'inventory', inventoryDoc.id), {
-            stock: newStock,
-            lastUpdated: Timestamp.now(),
-          });
+            await updateDoc(doc(db, 'inventory', inventoryDoc.id), {
+              stock: newStock,
+              lastUpdated: Timestamp.now(),
+            });
 
-          if (newStock === 0) {
-            alert(`売上を登録しました。\n注意: ${products.find(p => p.id === formData.productId)?.name}の在庫が0になりました。`);
+            if (newStock === 0) {
+              alert(`売上を登録しました。\n注意: ${products.find(p => p.id === formData.productId)?.name}の在庫が0になりました。`);
+            } else {
+              alert(`売上を登録しました。\n残在庫: ${newStock}個`);
+            }
           } else {
-            alert(`売上を登録しました。\n残在庫: ${newStock}個`);
+            alert('売上を登録しましたが、在庫データが見つかりませんでした。');
           }
-        } else {
-          alert('売上を登録しましたが、在庫データが見つかりませんでした。');
+        } catch (inventoryError) {
+          console.error('Error updating inventory:', inventoryError);
+          alert('売上は登録されましたが、在庫の更新に失敗しました。');
         }
-      } catch (inventoryError) {
-        console.error('Error updating inventory:', inventoryError);
-        alert('売上は登録されましたが、在庫の更新に失敗しました。');
+      } else {
+        alert('売上を登録しました。\n（在庫は変更されていません）');
       }
 
       // フォームをリセット
@@ -151,6 +156,7 @@ export default function SalesPage() {
         productId: '',
         locationId: '',
         quantity: 1,
+        updateInventory: true,
       });
 
       // 売上一覧を再取得
@@ -184,12 +190,20 @@ export default function SalesPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold text-black">売上管理</h1>
-            <button
-              onClick={() => router.push('/admin')}
-              className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-            >
-              ダッシュボードに戻る
-            </button>
+            <div className="flex gap-3">
+              <button
+                onClick={() => router.push('/admin/sales/analytics')}
+                className="px-4 py-2 text-sm font-medium text-white bg-[#8b2635] rounded-lg hover:bg-[#6d1d28] transition-colors"
+              >
+                📊 売上分析
+              </button>
+              <button
+                onClick={() => router.push('/admin')}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+              >
+                ダッシュボードに戻る
+              </button>
+            </div>
           </div>
         </div>
       </header>
@@ -270,6 +284,42 @@ export default function SalesPage() {
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8b2635] focus:border-transparent"
                   required
                 />
+              </div>
+
+              {/* 在庫操作 */}
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  在庫操作
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, updateInventory: true })}
+                    className={`px-4 py-2.5 rounded-lg font-medium transition-colors ${
+                      formData.updateInventory
+                        ? 'bg-[#8b2635] text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    在庫を減らす
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, updateInventory: false })}
+                    className={`px-4 py-2.5 rounded-lg font-medium transition-colors ${
+                      !formData.updateInventory
+                        ? 'bg-[#8b2635] text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    在庫を減らさない
+                  </button>
+                </div>
+                <p className="mt-2 text-xs text-gray-500">
+                  {formData.updateInventory
+                    ? '売上登録時に在庫が自動的に減ります'
+                    : '過去データ入力用。在庫は変更されません'}
+                </p>
               </div>
 
               {/* 登録ボタン */}
