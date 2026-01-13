@@ -68,11 +68,16 @@ export default function SalesAnalyticsPage() {
     }
   }, [loading]);
 
-  // 期間ごとの集計データ
+  // 期間ごとの集計データ（商品別）
   const aggregatedData = useMemo(() => {
     if (sales.length === 0) return [];
 
-    const grouped: Record<string, { period: string; quantity: number; revenue: number }> = {};
+    const grouped: Record<string, {
+      period: string;
+      totalQuantity: number;
+      totalRevenue: number;
+      products: Record<string, { quantity: number; revenue: number; name: string }>;
+    }> = {};
 
     sales.forEach((sale) => {
       const date = new Date(sale.date);
@@ -87,14 +92,30 @@ export default function SalesAnalyticsPage() {
       }
 
       if (!grouped[key]) {
-        grouped[key] = { period: key, quantity: 0, revenue: 0 };
+        grouped[key] = {
+          period: key,
+          totalQuantity: 0,
+          totalRevenue: 0,
+          products: {},
+        };
       }
 
       const product = products.find((p) => p.id === sale.productId);
+      const productName = product?.name || '不明な商品';
       const price = product?.price || 0;
 
-      grouped[key].quantity += sale.quantity;
-      grouped[key].revenue += sale.quantity * price;
+      if (!grouped[key].products[sale.productId]) {
+        grouped[key].products[sale.productId] = {
+          quantity: 0,
+          revenue: 0,
+          name: productName,
+        };
+      }
+
+      grouped[key].products[sale.productId].quantity += sale.quantity;
+      grouped[key].products[sale.productId].revenue += sale.quantity * price;
+      grouped[key].totalQuantity += sale.quantity;
+      grouped[key].totalRevenue += sale.quantity * price;
     });
 
     return Object.values(grouped).sort((a, b) => a.period.localeCompare(b.period));
@@ -102,12 +123,37 @@ export default function SalesAnalyticsPage() {
 
   // 最大値の計算（グラフの高さ調整用）
   const maxQuantity = useMemo(() => {
-    return Math.max(...aggregatedData.map((d) => d.quantity), 0);
+    return Math.max(...aggregatedData.map((d) => d.totalQuantity), 0);
   }, [aggregatedData]);
 
   const maxRevenue = useMemo(() => {
-    return Math.max(...aggregatedData.map((d) => d.revenue), 0);
+    return Math.max(...aggregatedData.map((d) => d.totalRevenue), 0);
   }, [aggregatedData]);
+
+  // 商品ごとの色を生成
+  const productColors = useMemo(() => {
+    const uniqueProductIds = Array.from(
+      new Set(sales.map((s) => s.productId))
+    );
+
+    const colors = [
+      '#8b2635', // えんじ色
+      '#c69c6d', // ゴールド
+      '#5a7d7c', // 青緑
+      '#9b6b4f', // 茶色
+      '#6b7c8b', // グレー青
+      '#8b6b7c', // 紫
+      '#7c8b6b', // オリーブ
+      '#8b7c6b', // ベージュ
+    ];
+
+    const colorMap: Record<string, string> = {};
+    uniqueProductIds.forEach((id, index) => {
+      colorMap[id] = colors[index % colors.length];
+    });
+
+    return colorMap;
+  }, [sales]);
 
   if (loading) {
     return (
@@ -183,29 +229,56 @@ export default function SalesAnalyticsPage() {
         {/* 売上数量グラフ */}
         <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6 mb-8">
           <h2 className="text-xl font-bold text-black mb-6 pb-3 border-b-2 border-[#c69c6d]">
-            売上数量推移
+            売上数量推移（商品別）
           </h2>
 
           {aggregatedData.length === 0 ? (
             <p className="text-gray-500 text-center py-12">データがありません</p>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-4">
               {aggregatedData.map((data) => {
-                const heightPercentage = maxQuantity > 0 ? (data.quantity / maxQuantity) * 100 : 0;
+                const totalWidth = maxQuantity > 0 ? (data.totalQuantity / maxQuantity) * 100 : 0;
 
                 return (
-                  <div key={data.period} className="flex items-center gap-4">
-                    <div className="w-24 text-sm text-gray-700 font-medium">{data.period}</div>
-                    <div className="flex-1 flex items-center gap-2">
-                      <div
-                        className="bg-[#8b2635] rounded transition-all duration-300"
-                        style={{
-                          width: `${heightPercentage}%`,
-                          minWidth: data.quantity > 0 ? '2rem' : '0',
-                          height: '2rem',
-                        }}
-                      />
-                      <div className="text-sm font-medium text-gray-700">{data.quantity}個</div>
+                  <div key={data.period}>
+                    <div className="flex items-center gap-4 mb-2">
+                      <div className="w-24 text-sm text-gray-700 font-medium">{data.period}</div>
+                      <div className="flex-1">
+                        <div className="flex rounded overflow-hidden" style={{ width: `${totalWidth}%`, minWidth: '4rem', height: '2.5rem' }}>
+                          {Object.entries(data.products).map(([productId, productData], index) => {
+                            const productWidth = data.totalQuantity > 0 ? (productData.quantity / data.totalQuantity) * 100 : 0;
+                            return (
+                              <div
+                                key={productId}
+                                className="flex items-center justify-center text-xs font-medium text-white transition-all duration-300 hover:opacity-80"
+                                style={{
+                                  width: `${productWidth}%`,
+                                  backgroundColor: productColors[productId],
+                                  minWidth: productData.quantity > 0 ? '2rem' : '0',
+                                }}
+                                title={`${productData.name}: ${productData.quantity}個`}
+                              >
+                                {productData.quantity > 0 && productWidth > 10 && `${productData.quantity}`}
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                      <div className="text-sm font-medium text-gray-700 min-w-[60px]">計{data.totalQuantity}個</div>
+                    </div>
+                    {/* 商品詳細 */}
+                    <div className="ml-28 flex flex-wrap gap-2 text-xs">
+                      {Object.entries(data.products).map(([productId, productData]) => (
+                        <div key={productId} className="flex items-center gap-1">
+                          <div
+                            className="w-3 h-3 rounded"
+                            style={{ backgroundColor: productColors[productId] }}
+                          />
+                          <span className="text-gray-600">
+                            {productData.name}: {productData.quantity}個
+                          </span>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 );
@@ -217,31 +290,56 @@ export default function SalesAnalyticsPage() {
         {/* 売上金額グラフ */}
         <div className="bg-white rounded-xl shadow-md border border-gray-200 p-6">
           <h2 className="text-xl font-bold text-black mb-6 pb-3 border-b-2 border-[#c69c6d]">
-            売上金額推移
+            売上金額推移（商品別）
           </h2>
 
           {aggregatedData.length === 0 ? (
             <p className="text-gray-500 text-center py-12">データがありません</p>
           ) : (
-            <div className="space-y-3">
+            <div className="space-y-4">
               {aggregatedData.map((data) => {
-                const heightPercentage = maxRevenue > 0 ? (data.revenue / maxRevenue) * 100 : 0;
+                const totalWidth = maxRevenue > 0 ? (data.totalRevenue / maxRevenue) * 100 : 0;
 
                 return (
-                  <div key={data.period} className="flex items-center gap-4">
-                    <div className="w-24 text-sm text-gray-700 font-medium">{data.period}</div>
-                    <div className="flex-1 flex items-center gap-2">
-                      <div
-                        className="bg-[#c69c6d] rounded transition-all duration-300"
-                        style={{
-                          width: `${heightPercentage}%`,
-                          minWidth: data.revenue > 0 ? '2rem' : '0',
-                          height: '2rem',
-                        }}
-                      />
-                      <div className="text-sm font-medium text-gray-700">
-                        ¥{data.revenue.toLocaleString()}
+                  <div key={data.period}>
+                    <div className="flex items-center gap-4 mb-2">
+                      <div className="w-24 text-sm text-gray-700 font-medium">{data.period}</div>
+                      <div className="flex-1">
+                        <div className="flex rounded overflow-hidden" style={{ width: `${totalWidth}%`, minWidth: '4rem', height: '2.5rem' }}>
+                          {Object.entries(data.products).map(([productId, productData]) => {
+                            const productWidth = data.totalRevenue > 0 ? (productData.revenue / data.totalRevenue) * 100 : 0;
+                            return (
+                              <div
+                                key={productId}
+                                className="flex items-center justify-center text-xs font-medium text-white transition-all duration-300 hover:opacity-80"
+                                style={{
+                                  width: `${productWidth}%`,
+                                  backgroundColor: productColors[productId],
+                                  minWidth: productData.revenue > 0 ? '2rem' : '0',
+                                }}
+                                title={`${productData.name}: ¥${productData.revenue.toLocaleString()}`}
+                              >
+                                {productData.revenue > 0 && productWidth > 15 && `¥${(productData.revenue / 1000).toFixed(0)}k`}
+                              </div>
+                            );
+                          })}
+                        </div>
                       </div>
+                      <div className="text-sm font-medium text-gray-700 min-w-[80px]">計¥{data.totalRevenue.toLocaleString()}</div>
+                    </div>
+                    {/* 商品詳細 */}
+                    <div className="ml-28 flex flex-wrap gap-2 text-xs">
+                      {Object.entries(data.products).map(([productId, productData]) => (
+                        <div key={productId} className="flex items-center gap-1">
+                          <div
+                            className="w-3 h-3 rounded"
+                            style={{ backgroundColor: productColors[productId] }}
+                          />
+                          <span className="text-gray-600">
+                            {productData.name}: ¥{productData.revenue.toLocaleString()}
+                          </span>
+                        </div>
+                      ))}
                     </div>
                   </div>
                 );
