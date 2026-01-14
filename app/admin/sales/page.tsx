@@ -16,7 +16,9 @@ export default function SalesPage() {
   const [formData, setFormData] = useState({
     date: new Date().toISOString().split('T')[0],
     productId: '',
-    locationId: '',
+    salesChannel: 'store', // 'store' | 'ec' | 'event'
+    locationId: '', // 店舗の場合はlocationId、ECは'ec-site'、イベントは'event-{イベント名}'
+    eventName: '', // イベント出店の場合のイベント名
     quantity: 1,
     updateInventory: true, // 在庫を減らすかどうか（デフォルト: true）
   });
@@ -94,9 +96,28 @@ export default function SalesPage() {
       return;
     }
 
-    if (!formData.productId || !formData.locationId || formData.quantity < 1) {
-      alert('すべての項目を正しく入力してください');
+    // バリデーション
+    if (!formData.productId || formData.quantity < 1) {
+      alert('商品と数量を入力してください');
       return;
+    }
+
+    // 販売チャネルごとのバリデーション
+    let finalLocationId = '';
+    if (formData.salesChannel === 'store') {
+      if (!formData.locationId) {
+        alert('販売店を選択してください');
+        return;
+      }
+      finalLocationId = formData.locationId;
+    } else if (formData.salesChannel === 'ec') {
+      finalLocationId = 'ec-site';
+    } else if (formData.salesChannel === 'event') {
+      if (!formData.eventName.trim()) {
+        alert('イベント名を入力してください');
+        return;
+      }
+      finalLocationId = `event-${formData.eventName.trim()}`;
     }
 
     setSubmitting(true);
@@ -106,20 +127,20 @@ export default function SalesPage() {
       const saleData = {
         date: formData.date,
         productId: formData.productId,
-        locationId: formData.locationId,
+        locationId: finalLocationId,
         quantity: formData.quantity,
         createdAt: Timestamp.now(),
       };
 
       await addDoc(collection(db, 'sales'), saleData);
 
-      // 在庫を減らす処理（updateInventoryがtrueの場合のみ）
-      if (formData.updateInventory) {
+      // 在庫を減らす処理（updateInventoryがtrueかつ店舗販売の場合のみ）
+      if (formData.updateInventory && formData.salesChannel === 'store') {
         try {
           const inventoryQuery = query(
             collection(db, 'inventory'),
             where('productId', '==', formData.productId),
-            where('locationId', '==', formData.locationId)
+            where('locationId', '==', finalLocationId)
           );
 
           const inventorySnap = await getDocs(inventoryQuery);
@@ -147,14 +168,23 @@ export default function SalesPage() {
           alert('売上は登録されましたが、在庫の更新に失敗しました。');
         }
       } else {
-        alert('売上を登録しました。\n（在庫は変更されていません）');
+        const channelName =
+          formData.salesChannel === 'ec' ? 'ECサイト' :
+          formData.salesChannel === 'event' ? 'イベント出店' :
+          '店舗';
+        const message = formData.updateInventory && formData.salesChannel !== 'store'
+          ? `売上を登録しました（${channelName}）。\n（ECサイト・イベントは在庫管理対象外です）`
+          : '売上を登録しました。\n（在庫は変更されていません）';
+        alert(message);
       }
 
       // フォームをリセット
       setFormData({
         date: new Date().toISOString().split('T')[0],
         productId: '',
+        salesChannel: 'store',
         locationId: '',
+        eventName: '',
         quantity: 1,
         updateInventory: true,
       });
@@ -251,25 +281,86 @@ export default function SalesPage() {
                 </select>
               </div>
 
-              {/* 販売店 */}
+              {/* 販売チャネル */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
-                  販売店 <span className="text-red-500">*</span>
+                  販売チャネル <span className="text-red-500">*</span>
                 </label>
-                <select
-                  value={formData.locationId}
-                  onChange={(e) => setFormData({ ...formData, locationId: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8b2635] focus:border-transparent"
-                  required
-                >
-                  <option value="">選択してください</option>
-                  {locations.map((location) => (
-                    <option key={location.id} value={location.id}>
-                      {location.name}
-                    </option>
-                  ))}
-                </select>
+                <div className="grid grid-cols-3 gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, salesChannel: 'store', locationId: '', eventName: '' })}
+                    className={`px-3 py-2 rounded-lg font-medium text-sm transition-colors ${
+                      formData.salesChannel === 'store'
+                        ? 'bg-[#8b2635] text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    🏪 店舗
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, salesChannel: 'ec', locationId: '', eventName: '' })}
+                    className={`px-3 py-2 rounded-lg font-medium text-sm transition-colors ${
+                      formData.salesChannel === 'ec'
+                        ? 'bg-[#8b2635] text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    🌐 EC
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFormData({ ...formData, salesChannel: 'event', locationId: '', eventName: '' })}
+                    className={`px-3 py-2 rounded-lg font-medium text-sm transition-colors ${
+                      formData.salesChannel === 'event'
+                        ? 'bg-[#8b2635] text-white'
+                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                    }`}
+                  >
+                    🎪 イベント
+                  </button>
+                </div>
               </div>
+
+              {/* 販売店（店舗販売の場合のみ表示） */}
+              {formData.salesChannel === 'store' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    販売店 <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    value={formData.locationId}
+                    onChange={(e) => setFormData({ ...formData, locationId: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8b2635] focus:border-transparent"
+                    required
+                  >
+                    <option value="">選択してください</option>
+                    {locations.map((location) => (
+                      <option key={location.id} value={location.id}>
+                        {location.name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
+              {/* イベント名（イベント出店の場合のみ表示） */}
+              {formData.salesChannel === 'event' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    イベント名 <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={formData.eventName}
+                    onChange={(e) => setFormData({ ...formData, eventName: e.target.value })}
+                    placeholder="例: 春祭り2026"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-[#8b2635] focus:border-transparent"
+                    required
+                  />
+                </div>
+              )}
 
               {/* 数量 */}
               <div>
@@ -286,41 +377,52 @@ export default function SalesPage() {
                 />
               </div>
 
-              {/* 在庫操作 */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  在庫操作
-                </label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setFormData({ ...formData, updateInventory: true })}
-                    className={`px-4 py-2.5 rounded-lg font-medium transition-colors ${
-                      formData.updateInventory
-                        ? 'bg-[#8b2635] text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    在庫を減らす
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setFormData({ ...formData, updateInventory: false })}
-                    className={`px-4 py-2.5 rounded-lg font-medium transition-colors ${
-                      !formData.updateInventory
-                        ? 'bg-[#8b2635] text-white'
-                        : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
-                  >
-                    在庫を減らさない
-                  </button>
+              {/* 在庫操作（店舗販売の場合のみ表示） */}
+              {formData.salesChannel === 'store' && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    在庫操作
+                  </label>
+                  <div className="grid grid-cols-2 gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, updateInventory: true })}
+                      className={`px-4 py-2.5 rounded-lg font-medium transition-colors ${
+                        formData.updateInventory
+                          ? 'bg-[#8b2635] text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      在庫を減らす
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormData({ ...formData, updateInventory: false })}
+                      className={`px-4 py-2.5 rounded-lg font-medium transition-colors ${
+                        !formData.updateInventory
+                          ? 'bg-[#8b2635] text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      在庫を減らさない
+                    </button>
+                  </div>
+                  <p className="mt-2 text-xs text-gray-500">
+                    {formData.updateInventory
+                      ? '売上登録時に在庫が自動的に減ります'
+                      : '過去データ入力用。在庫は変更されません'}
+                  </p>
                 </div>
-                <p className="mt-2 text-xs text-gray-500">
-                  {formData.updateInventory
-                    ? '売上登録時に在庫が自動的に減ります'
-                    : '過去データ入力用。在庫は変更されません'}
-                </p>
-              </div>
+              )}
+
+              {/* EC・イベントの場合の説明 */}
+              {formData.salesChannel !== 'store' && (
+                <div className="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                  <p className="text-sm text-blue-800">
+                    {formData.salesChannel === 'ec' ? 'ECサイト' : 'イベント出店'}の売上は在庫管理の対象外です。売上データのみ記録されます。
+                  </p>
+                </div>
+              )}
 
               {/* 登録ボタン */}
               <button
@@ -347,6 +449,21 @@ export default function SalesPage() {
                   const product = products.find((p) => p.id === sale.productId);
                   const location = locations.find((l) => l.id === sale.locationId);
 
+                  // 販売チャネルを判定
+                  let channelLabel = '';
+                  let channelIcon = '';
+                  if (sale.locationId === 'ec-site') {
+                    channelLabel = 'ECサイト';
+                    channelIcon = '🌐';
+                  } else if (sale.locationId.startsWith('event-')) {
+                    const eventName = sale.locationId.replace('event-', '');
+                    channelLabel = `イベント: ${eventName}`;
+                    channelIcon = '🎪';
+                  } else {
+                    channelLabel = location?.name || '不明な販売店';
+                    channelIcon = '🏪';
+                  }
+
                   return (
                     <div
                       key={sale.id}
@@ -356,8 +473,9 @@ export default function SalesPage() {
                         <div className="font-medium text-black">{product?.name || '不明な商品'}</div>
                         <div className="text-sm text-gray-600">{sale.date}</div>
                       </div>
-                      <div className="text-sm text-gray-600">
-                        {location?.name || '不明な販売店'} / {sale.quantity}個
+                      <div className="text-sm text-gray-600 flex items-center gap-1">
+                        <span>{channelIcon}</span>
+                        <span>{channelLabel} / {sale.quantity}個</span>
                       </div>
                     </div>
                   );
